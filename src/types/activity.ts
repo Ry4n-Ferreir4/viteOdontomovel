@@ -2,7 +2,9 @@ export interface Activity {
   id: string;
   title: string;
   date: string;
-  start_time: string; // Remova o `undefined` daqui
-  end_time: string; // Remova o `undefined` daqui
-  user_id?: string; // Se necessário, mantenha o `?` aqui
+  start_time: string;
+  end_time: string;
+  description?: string;
+  visibility: 'public' | 'private';
+  user_id?: string;
 }

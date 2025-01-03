@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Activity } from '../types/activity';
+import { ActivityForm } from './ActivityForm';
 
 interface ActivityModalProps {
   isOpen: boolean;
@@ -20,44 +21,30 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
   onEditActivity,
   onDeleteActivity,
 }) => {
-  const [title, setTitle] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [errors, setErrors] = useState<{ start_time?: string; end_time?: string }>({});
+  const [viewingActivity, setViewingActivity] = useState<Activity | null>(null);
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddActivity = (values: Partial<Activity>) => {
+    onAddActivity({
+      id: Date.now().toString(),
+      title: values.title || '',
+      date: date.toISOString().split('T')[0],
+      start_time: values.start_time || '',
+      end_time: values.end_time || '',
+      description: values.description || '',
+      visibility: values.visibility || 'private',
+    });
+  };
 
-    // Limpa erros antes de uma nova tentativa de adição
-    setErrors({});
-
-    // Validação dos campos
-    const newErrors: { start_time?: string; end_time?: string } = {};
-    if (!startTime) {
-      newErrors.start_time = 'A hora inicial é obrigatória';
-    }
-    if (!endTime) {
-      newErrors.end_time = 'A hora final é obrigatória';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    if (title && startTime && endTime) {
-      onAddActivity({
-        id: Date.now().toString(), // ID gerado dinamicamente
-        title,
-        date: date.toISOString().split('T')[0], // Apenas a data (sem o horário)
-        start_time: startTime,
-        end_time: endTime,
-      });
-      setTitle('');
-      setStartTime('');
-      setEndTime('');
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await onDeleteActivity(id);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -73,70 +60,52 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mb-4">
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Atividade</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full p-2 border rounded"
-              placeholder="Digite a atividade"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Hora Inicial</label>
-            <input
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="w-full p-2 border rounded"
-            />
-            {errors.start_time && <p className="text-red-500 text-sm">{errors.start_time}</p>}
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Hora Final</label>
-            <input
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="w-full p-2 border rounded"
-            />
-            {errors.end_time && <p className="text-red-500 text-sm">{errors.end_time}</p>}
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-          >
-            Adicionar Atividade
-          </button>
-        </form>
+        <ActivityForm
+          onSubmit={handleAddActivity}
+          submitLabel="Adicionar Atividade"
+        />
 
-        <div className="space-y-2">
+        <div className="mt-6 space-y-2">
           <h3 className="font-medium">Atividades do dia:</h3>
           {activities.length === 0 ? (
             <p className="text-gray-500">Nenhuma atividade cadastrada</p>
           ) : (
             activities.map((activity) => (
-              <div key={activity.id} className="flex justify-between items-center py-2 border-b">
-                <span>{activity.title}</span>
+              <div key={activity.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <div>
+                  <span className="font-medium">{activity.title}</span>
+                  <span className="block text-sm text-gray-500">
+                    {activity.start_time} - {activity.end_time}
+                  </span>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    activity.visibility === 'public' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {activity.visibility === 'public' ? 'Pública' : 'Privada'}
+                  </span>
+                </div>
                 <div className="flex space-x-2">
                   <button
-                    className="text-red-500"
+                    onClick={() => setViewingActivity(activity)}
+                    className="text-blue-500 hover:text-blue-600"
                   >
                     👁
                   </button>
                   <button
-                    onClick={() => onEditActivity(activity.id, { title: activity.title })}
-                    className="text-blue-500"
+                    onClick={() => setEditingActivity(activity)}
+                    className="text-blue-500 hover:text-blue-600"
                   >
                     ✏
                   </button>
                   <button
-                    onClick={() => onDeleteActivity(activity.id)}
-                    className="text-red-500"
+                    onClick={() => handleDelete(activity.id)}
+                    className="text-red-500 hover:text-red-600"
+                    disabled={deletingId === activity.id}
                   >
-                    ❌
+                    {deletingId === activity.id ? (
+                      <span className="inline-block animate-spin">⌛</span>
+                    ) : (
+                      '❌'
+                    )}
                   </button>
                 </div>
               </div>
@@ -144,6 +113,62 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
           )}
         </div>
       </div>
+
+      {viewingActivity && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">Detalhes da Atividade</h3>
+              <button onClick={() => setViewingActivity(null)} className="text-gray-500">✕</button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium">Título</label>
+                <p className="mt-1">{viewingActivity.title}</p>
+              </div>
+              {viewingActivity.description && (
+                <div>
+                  <label className="block text-sm font-medium">Descrição</label>
+                  <p className="mt-1 whitespace-pre-wrap">{viewingActivity.description}</p>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium">Horário</label>
+                <p className="mt-1">{viewingActivity.start_time} - {viewingActivity.end_time}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Visibilidade</label>
+                <p className="mt-1">{viewingActivity.visibility === 'public' ? 'Pública' : 'Privada'}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setViewingActivity(null)}
+              className="mt-4 w-full bg-blue-500 text-white p-2 rounded"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {editingActivity && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">Editar Atividade</h3>
+              <button onClick={() => setEditingActivity(null)} className="text-gray-500">✕</button>
+            </div>
+            <ActivityForm
+              initialValues={editingActivity}
+              onSubmit={(values) => {
+                onEditActivity(editingActivity.id, values);
+                setEditingActivity(null);
+              }}
+              submitLabel="Salvar Alterações"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
