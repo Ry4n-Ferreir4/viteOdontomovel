@@ -15,6 +15,7 @@ export const EditActivityModal: React.FC<EditActivityModalProps> = ({
   const [title, setTitle] = useState(activity.title);
   const [startTime, setStartTime] = useState(activity.start_time);
   const [endTime, setEndTime] = useState(activity.end_time);
+  const [description, setDescription] = useState(activity.description || '');  // Novo campo de descrição
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -33,6 +34,7 @@ export const EditActivityModal: React.FC<EditActivityModalProps> = ({
       title,
       start_time: startTime,
       end_time: endTime,
+      description,  // Adicionando a descrição ao objeto de atualização
     });
   };
 
@@ -81,6 +83,16 @@ export const EditActivityModal: React.FC<EditActivityModalProps> = ({
             {errors.end_time && (
               <p className="text-red-500 text-sm mt-1">{errors.end_time}</p>
             )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Descrição</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="mt-1 w-full p-2 border rounded"
+              rows={4}
+            />
           </div>
 
           <div className="flex space-x-2">

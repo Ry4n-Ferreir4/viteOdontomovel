@@ -64,17 +64,17 @@ export function Calendar() {
       console.error('User not logged in');
       return;
     }
-
+  
     if (selectedDate) {
       const newErrors: { [key: string]: string } = {};
       if (!activity.start_time) newErrors.start_time = 'A hora inicial é obrigatória';
       if (!activity.end_time) newErrors.end_time = 'A hora final é obrigatória';
-
+  
       if (Object.keys(newErrors).length > 0) {
         setErrors(newErrors);
         return;
       }
-
+  
       setLoading(true);
       try {
         const dateKey = selectedDate.toISOString().split('T')[0];
@@ -83,15 +83,16 @@ export function Calendar() {
           .insert([{
             title: activity.title,
             date: dateKey,
-            start_time: activity.start_time || '', // Adicione um fallback
-            end_time: activity.end_time || '', // Adicione um fallback
+            start_time: activity.start_time || '', 
+            end_time: activity.end_time || '',
+            description: activity.description || '', // Adicionando o campo descrição
             user_id: user.id,
             visibility: activity.visibility,
           }])
           .select();
-
+  
         if (error) throw error;
-
+  
         if (data) {
           setActivities(prev => ({
             ...prev,
