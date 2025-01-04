@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Activity } from '../types/activity';
 import { ActivityForm } from './ActivityForm';
+import { supabase } from '../lib/supabase'; // Para pegar o usuário logado
 
 interface ActivityModalProps {
   isOpen: boolean;
@@ -21,9 +22,25 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
   onEditActivity,
   onDeleteActivity,
 }) => {
+  const [user, setUser] = useState<any>(null); // Estado para armazenar o usuário logado
   const [viewingActivity, setViewingActivity] = useState<Activity | null>(null);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Função para obter o usuário logado
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (data) {
+        setUser(data.user); // Armazena o usuário logado
+      }
+      if (error) {
+        console.error(error);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   if (!isOpen) return null;
 
@@ -48,13 +65,20 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
     }
   };
 
+  const isCreator = (activity: Activity) => {
+    return activity.user_id === user?.id; // Verifica se o usuário logado é o criador
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg w-full max-w-md">
+      <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">
             Atividades para {date.toLocaleDateString('pt-BR')}
           </h2>
+          {user && (
+            <span className="text-sm text-gray-600">Olá, {user.display_name}</span> // Exibe o nome do usuário
+          )}
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             ✕
           </button>
@@ -65,7 +89,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
           submitLabel="Adicionar Atividade"
         />
 
-        <div className="mt-6 space-y-2">
+        <div className="mt-6 space-y-2 overflow-y-auto max-h-[60vh]">
           <h3 className="font-medium">Atividades do dia:</h3>
           {activities.length === 0 ? (
             <p className="text-gray-500">Nenhuma atividade cadastrada</p>
@@ -90,23 +114,29 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
                   >
                     👁
                   </button>
-                  <button
-                    onClick={() => setEditingActivity(activity)}
-                    className="text-blue-500 hover:text-blue-600"
-                  >
-                    ✏
-                  </button>
-                  <button
-                    onClick={() => handleDelete(activity.id)}
-                    className="text-red-500 hover:text-red-600"
-                    disabled={deletingId === activity.id}
-                  >
-                    {deletingId === activity.id ? (
-                      <span className="inline-block animate-spin">⌛</span>
-                    ) : (
-                      '❌'
-                    )}
-                  </button>
+
+                  {/* Edit and Delete buttons */}
+                  {activity.visibility === 'private' || isCreator(activity) ? (
+                    <>
+                      <button
+                        onClick={() => setEditingActivity(activity)}
+                        className="text-blue-500 hover:text-blue-600"
+                      >
+                        ✏
+                      </button>
+                      <button
+                        onClick={() => handleDelete(activity.id)}
+                        className="text-red-500 hover:text-red-600"
+                        disabled={deletingId === activity.id}
+                      >
+                        {deletingId === activity.id ? (
+                          <span className="inline-block animate-spin">⌛</span>
+                        ) : (
+                          '❌'
+                        )}
+                      </button>
+                    </>
+                  ) : null}
                 </div>
               </div>
             ))
@@ -116,7 +146,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
 
       {viewingActivity && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Detalhes da Atividade</h3>
               <button onClick={() => setViewingActivity(null)} className="text-gray-500">✕</button>
@@ -153,7 +183,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
 
       {editingActivity && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Editar Atividade</h3>
               <button onClick={() => setEditingActivity(null)} className="text-gray-500">✕</button>

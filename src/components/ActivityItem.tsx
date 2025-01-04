@@ -5,9 +5,10 @@ interface ActivityItemProps {
   activity: Activity;
   onEdit: (id: string, updatedActivity: Partial<Activity>) => void;
   onDelete: (id: string) => void;
+  user: any;  // Recebendo o usuário logado como prop
 }
 
-export const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onEdit, onDelete }) => {
+export const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onEdit, onDelete, user }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(activity.title);
   const [startTime, setStartTime] = useState(activity.start_time);
@@ -24,6 +25,26 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onEdit, on
     onEdit(activity.id, { title, start_time: startTime, end_time: endTime });
     setIsEditing(false);
   };
+
+  // Log para depurar o display_name do usuário
+  useEffect(() => {
+    if (user) {
+      console.log('Usuário logado:', user);  // Verificando todo o objeto user
+      if (user.display_name) {
+        console.log('Display name encontrado:', user.display_name);  // Verificando o display_name especificamente
+      } else {
+        console.log('Display name não encontrado no objeto user');
+      }
+    } else {
+      console.log('Nenhum usuário logado');
+    }
+  }, [user]);
+
+  // Log para garantir que as variáveis de estado estão sendo definidas corretamente
+  useEffect(() => {
+    console.log('Atividade Atual:', activity);
+    console.log('Título:', title, 'Hora Inicial:', startTime, 'Hora Final:', endTime);
+  }, [activity, title, startTime, endTime]);
 
   if (isEditing) {
     return (
@@ -76,7 +97,15 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onEdit, on
   return (
     <div className="p-2 bg-gray-50 rounded flex justify-between items-center">
       <div>
-        <span>{activity.title}</span>
+        <div className="flex items-center space-x-2">
+          {/* Exibindo o nome do usuário logado ao lado do título */}
+          {user && user.display_name ? (
+            <span className="text-sm text-gray-600">Olá, {user.display_name}</span>
+          ) : (
+            <span className="text-sm text-gray-600">Usuário não encontrado</span>
+          )}
+          <span>{activity.title}</span>
+        </div>
         <span className="block text-sm text-gray-500">{activity.start_time} - {activity.end_time}</span>
       </div>
       <div className="flex space-x-2">

@@ -25,30 +25,29 @@ export function Calendar() {
 
       if (userError) throw userError;
 
-      if (user) {
-        const { data, error } = await supabase
-          .from('activities')
-          .select('*')
-          .eq('user_id', user.id);
+      const { data, error } = await supabase
+        .from('activities')
+        .select('*')
+        .or(`user_id.eq.${user?.id},visibility.eq.public`);
 
-        if (error) throw error;
+      if (error) throw error;
 
-        console.log('Activities loaded:', data);
+      console.log('Activities loaded:', data);
 
-        const groupedActivities = data.reduce((acc: { [key: string]: Activity[] }, activity) => {
-          const dateKey = activity.date;
-          if (!acc[dateKey]) {
-            acc[dateKey] = [];
-          }
-          acc[dateKey].push({...activity,
+      const groupedActivities = data.reduce((acc: { [key: string]: Activity[] }, activity) => {
+        const dateKey = activity.date;
+        if (!acc[dateKey]) {
+          acc[dateKey] = [];
+        }
+        acc[dateKey].push({
+          ...activity,
           start_time: activity.start_time || '', // Fallback para evitar undefined
           end_time: activity.end_time || '', // Fallback para evitar undefined
-          });
-          return acc;
-        }, {});
+        });
+        return acc;
+      }, {});
 
-        setActivities(groupedActivities);
-      }
+      setActivities(groupedActivities);
     } catch (error) {
       console.error('Error loading activities:', error);
     }
@@ -87,6 +86,7 @@ export function Calendar() {
             start_time: activity.start_time || '', // Adicione um fallback
             end_time: activity.end_time || '', // Adicione um fallback
             user_id: user.id,
+            visibility: activity.visibility,
           }])
           .select();
 
@@ -110,7 +110,7 @@ export function Calendar() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="p-4 bg-white shadow-sm flex justify-between items-center">
-        <h1 className="text-xl font-bold">Calendário 2025</h1>
+        <h1 className="text-xl font-bold">Odontomovel 2025</h1>
         <button
           onClick={handleSignOut}
           className="px-4 py-2 text-sm text-red-600 hover:text-red-800"
