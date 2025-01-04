@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth'; // Importando useAuth
 
 interface AuthFormProps {
   type: 'login' | 'register';
@@ -8,16 +9,24 @@ interface AuthFormProps {
 
 export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth(); // Usando o hook useAuth
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState(''); // Novo campo para o nome
+  const [name, setName] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      // Se o usuário estiver logado, redireciona para /calendar
+      navigate('/calendar');
+    }
+  }, [user, navigate]); // Dependendo do usuário, redireciona para a /calendar
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
+    setIsLoading(true);
 
     try {
       if (type === 'register') {
@@ -26,13 +35,12 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
           password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { display_name: name }, // Armazenar o nome no campo display_name
+            data: { display_name: name },
           },
         });
 
         if (signUpError) throw signUpError;
 
-        // Após o cadastro, podemos atualizar o display_name
         if (data?.user) {
           const { error: updateError } = await supabase.auth.updateUser({
             data: {
@@ -44,7 +52,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
         }
 
         navigate("/login");
-
       } else {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({
           email,
@@ -63,7 +70,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
     } catch (err: any) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -90,7 +97,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
                 onChange={(e) => setName(e.target.value)}
                 className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
-                disabled={loading}
+                disabled={isLoading}
               />
             </div>
           )}
@@ -103,7 +110,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
-              disabled={loading}
+              disabled={isLoading}
             />
           </div>
 
@@ -115,7 +122,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
-              disabled={loading}
+              disabled={isLoading}
               minLength={6}
             />
           </div>
@@ -123,13 +130,13 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
           <button
             type="submit"
             className={`w-full p-2 rounded text-white transition-colors ${
-              loading
+              isLoading
                 ? 'bg-blue-400 cursor-not-allowed'
                 : 'bg-blue-500 hover:bg-blue-600'
             }`}
-            disabled={loading}
+            disabled={isLoading}
           >
-            {loading ? (
+            {isLoading ? (
               <span className="flex items-center justify-center">
                 <svg
                   className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
