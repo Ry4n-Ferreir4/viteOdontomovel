@@ -13,10 +13,22 @@ export function Calendar() {
   const [activities, setActivities] = useState<{ [key: string]: Activity[] }>({});
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [displayName, setDisplayName] = useState<string>(''); // Estado para armazenar o nome do usuário
 
   useEffect(() => {
+    loadUserData();
     loadActivities();
   }, []);
+
+  const loadUserData = async () => {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      setDisplayName(user?.user_metadata?.display_name || ''); // Obtém o display_name do user_metadata
+    } catch (error) {
+      console.error('Erro ao carregar os dados do usuário:', error);
+    }
+  };
 
   const loadActivities = async () => {
     try {
@@ -64,17 +76,17 @@ export function Calendar() {
       console.error('User not logged in');
       return;
     }
-  
+
     if (selectedDate) {
       const newErrors: { [key: string]: string } = {};
       if (!activity.start_time) newErrors.start_time = 'A hora inicial é obrigatória';
       if (!activity.end_time) newErrors.end_time = 'A hora final é obrigatória';
-  
+
       if (Object.keys(newErrors).length > 0) {
         setErrors(newErrors);
         return;
       }
-  
+
       setLoading(true);
       try {
         const dateKey = selectedDate.toISOString().split('T')[0];
@@ -90,9 +102,9 @@ export function Calendar() {
             visibility: activity.visibility,
           }])
           .select();
-  
+
         if (error) throw error;
-  
+
         if (data) {
           setActivities(prev => ({
             ...prev,
@@ -111,7 +123,9 @@ export function Calendar() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="p-4 bg-white shadow-sm flex justify-between items-center">
-        <h1 className="text-xl font-bold">Odontomovel 2025</h1>
+        <h1 className="text-xl font-bold">
+          Odontomóvel 2025 {displayName && `- Bem-vindo(a), ${displayName}`}
+        </h1>
         <button
           onClick={handleSignOut}
           className="px-4 py-2 text-sm text-red-600 hover:text-red-800"

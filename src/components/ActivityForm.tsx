@@ -1,16 +1,19 @@
 import React from 'react';
-import { Activity } from '../types/activity';
+import { Activity, ActivityStatus } from '../types/activity';
+import { getStatusLabel } from '../utils/status';
 
 interface ActivityFormProps {
   initialValues?: Partial<Activity>;
   onSubmit: (values: Partial<Activity>) => void;
   submitLabel: string;
+  showStatus?: boolean;
 }
 
 export const ActivityForm: React.FC<ActivityFormProps> = ({
   initialValues = {},
   onSubmit,
   submitLabel,
+  showStatus = false,
 }) => {
   const [title, setTitle] = React.useState(initialValues.title || '');
   const [startTime, setStartTime] = React.useState(initialValues.start_time || '');
@@ -18,6 +21,9 @@ export const ActivityForm: React.FC<ActivityFormProps> = ({
   const [description, setDescription] = React.useState(initialValues.description || '');
   const [visibility, setVisibility] = React.useState<'public' | 'private'>(
     initialValues.visibility || 'private'
+  );
+  const [status, setStatus] = React.useState<ActivityStatus>(
+    initialValues.status || 'aguardando_atendimento'
   );
   const [errors, setErrors] = React.useState<{ [key: string]: string }>({});
 
@@ -41,6 +47,7 @@ export const ActivityForm: React.FC<ActivityFormProps> = ({
       end_time: endTime,
       description,
       visibility,
+      status,
     });
   };
 
@@ -80,6 +87,23 @@ export const ActivityForm: React.FC<ActivityFormProps> = ({
           <option value="public">Pública</option>
         </select>
       </div>
+
+      {showStatus && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Status</label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as ActivityStatus)}
+            className="mt-1 w-full p-2 border rounded"
+          >
+            <option value="reservado">{getStatusLabel('reservado')}</option>
+            <option value="confirmado">{getStatusLabel('confirmado')}</option>
+            <option value="atendimento_realizado">{getStatusLabel('atendimento_realizado')}</option>
+            <option value="aguardando_atendimento">{getStatusLabel('aguardando_atendimento')}</option>
+            <option value="cancelado">{getStatusLabel('cancelado')}</option>
+          </select>
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700">Hora Inicial</label>
